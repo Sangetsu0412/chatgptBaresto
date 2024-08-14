@@ -1,7 +1,7 @@
 import express, { Application } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import sequelize from './config/db';
+import pool from './config/db'; // Updated to use pg pool
 import authRoutes from './routes/authRoutes';
 import menuRoutes from './routes/menuRoutes';
 
@@ -12,15 +12,21 @@ const app: Application = express();
 app.use(cors());
 app.use(express.json());
 
-sequelize.authenticate()
-    .then(() => console.log('Database connected...'))
-    .catch(err => console.log('Error: ' + err));
+// Database connection check
+pool.connect()
+    .then(client => {
+        console.log('Database connected...');
+        client.release(); // Release the client back to the pool
+    })
+    .catch(err => {
+        console.error('Error: ', err);
+    });
 
-sequelize.sync();
-
+// Define routes
 app.use('/api/auth', authRoutes);
 app.use('/api/menu-items', menuRoutes);
 
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
